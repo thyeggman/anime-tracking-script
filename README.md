@@ -3,8 +3,6 @@ Just a script to help jurors in the /r/anime awards track what they need to catc
 
 ## Instructions
 
-### Prepare your anilist account
-
 1. Create a new sheet in google sheets
 1. Go to tools -> script editor
 1. Paste in the script from this repo

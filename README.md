@@ -9,20 +9,7 @@ Just a script to help jurors in the /r/anime awards track what they need to catc
 4. Select the "onOpen" funtion from the dropdown and run it
 5. Approve your account to run the script and get access to sheets (this API does not need authentication so it's completely safe)
 6. Go back to your spreadsheet - you should now have an "anime" menu button at the top
-7. Find your user ID
-    1. Go to https://anilist.co/graphiql
-    1. Enter the following query, entering your own username:
-
-```
-{
-  MediaList(userName: "YourUsernameHere") {
-    id
-    userId
-  }
-}
-```
-
-8. Enter the username from the query in A1 on your spreadsheet
+8. Enter your anilist username in A1 on your spreadsheet
 9. Add every anime you want to track to your anilist (planning is fine)
 10. Enter the anime IDs you want to track in column 1 below your user ID
 11. Use Anime -> Update sheet

@@ -4,13 +4,13 @@ function updateSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getActiveSheet();
 
-  var userId = sheet.getRange(1,1).getValue();
+  var userName = sheet.getRange(1,1).getValue();
   var awardsAnimeList = sheet.getRange(2,1,100,1).getValues();
 
   var i = 0;
   for (i; i < awardsAnimeList.length; i++) {
     if (sheet.getRange(i + 2, 1).isBlank()) continue;
-    var anime = fetchAnimeData(awardsAnimeList[i][0], userId);
+    var anime = fetchAnimeData(awardsAnimeList[i][0], userName);
     var jsonResult = JSON.parse(anime.getContentText());
     var mediaList = jsonResult.data.MediaList;
     sheet.getRange(i + 2, 2).setValue(mediaList.media.title.romaji);
@@ -21,10 +21,35 @@ function updateSheet() {
   }
 }
 
-function fetchAnimeData(animeId, userId) {
+function fetchAnimeData(animeId, userName) {
+  var query1 = `
+  {
+    MediaList(userName: \"` + userName + `\") {
+      id
+      userId
+    }
+  }`;
+
+  var options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    payload: JSON.stringify({
+      query: query1,
+      variables: variables
+    })
+  };
+
+  var url = 'https://graphql.anilist.co';
+  var result = UrlFetchApp.fetch(url, options);
+  var jsonResult = JSON.parse(result.getContentText());
+  var userId = jsonResult.data.MediaList.userId;
+
   // Here we define our query as a multi-line string
   // Storing it in a separate .graphql/.gql file is also possible
-  var query = `
+  var query2 = `
     query ($animeId: Int, $userId: Int) {
       MediaList(userId: $userId, mediaId: $animeId) {
         id
@@ -48,15 +73,14 @@ function fetchAnimeData(animeId, userId) {
   };
 
   // Define the config we'll need for our Api request
-  var url = 'https://graphql.anilist.co';
-  var options = {
+  options = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
     payload: JSON.stringify({
-      query: query,
+      query: query2,
       variables: variables
     })
   };

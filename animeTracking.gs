@@ -1,27 +1,45 @@
+const var USERNAME_OFFSET = 8;
+const var ANIME_OFFSET = 2
+
 function updateSheet() {
   
   // Spreadsheet stuff
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getActiveSheet();
 
-  var userName = sheet.getRange(1,1).getValue();
-  var awardsAnimeList = sheet.getRange(2,1,100,1).getValues();
+  // Usernames start from G1 (1, 8), are 1 row and an arbitrary number of columns
+  var userNames = sheet.getRange(1, USERNAME_OFFSET, 1, 100).getValues();
+
+  // Anime start from A2 (2,1), are an arbitrary number of rows and 1 column
+  var awardsAnimeList = sheet.getRange(ANIME_OFFSET, 1, 100, 1).getValues();
 
   var i = 0;
-  for (i; i < awardsAnimeList.length; i++) {
-    if (sheet.getRange(i + 2, 1).isBlank()) continue;
-    var anime = fetchAnimeData(awardsAnimeList[i][0], userName);
-    var jsonResult = JSON.parse(anime.getContentText());
-    var mediaList = jsonResult.data.MediaList;
-    sheet.getRange(i + 2, 2).setValue(mediaList.media.title.romaji);
-    sheet.getRange(i + 2, 3).setValue(mediaList.media.title.english);
-    sheet.getRange(i + 2, 4).setValue(mediaList.progress);
-    sheet.getRange(i + 2, 5).setValue(mediaList.media.episodes);
-    sheet.getRange(i + 2, 6).setValue(mediaList.media.duration);
+  var j = 0;
+  for (i; i < userNames.length; i++) {
+
+    // Get the user id by their username
+    var userName = sheet.getRange(1, i + USERNAME_OFFSET)
+    if (userName.isBlank()) continue;
+    var userId = fetchUserId(userName)
+
+    var numAnime = 0;
+    for (j; j < awardsAnimeList.length; j++) {
+      if (sheet.getRange(j + ANIME_OFFSET, 1).isBlank()) {
+        break;
+      }
+      
+      var anime = fetchAnimeData(awardsAnimeList[j][0], userId);
+      var jsonResult = JSON.parse(anime.getContentText());
+      var mediaList = jsonResult.data.MediaList;
+      sheet.getRange(j + ANIME_OFFSET, 2).setValue(mediaList.media.title.english);
+      sheet.getRange(j + ANIME_OFFSET, 6).setValue(mediaList.media.episodes);
+      sheet.getRange(j + ANIME_OFFSET, 7).setValue(mediaList.media.duration);
+      sheet.getRange(j + ANIME_OFFSET, i + USERNAME_OFFSET).setValue(mediaList.progress);
+    }
   }
 }
 
-function fetchAnimeData(animeId, userName) {
+function fetchUserId(username) {
   var query1 = `
   {
     MediaList(userName: \"` + userName + `\") {
@@ -45,8 +63,10 @@ function fetchAnimeData(animeId, userName) {
   var url = 'https://graphql.anilist.co';
   var result = UrlFetchApp.fetch(url, options);
   var jsonResult = JSON.parse(result.getContentText());
-  var userId = jsonResult.data.MediaList.userId;
+  return jsonResult.data.MediaList.userId;
+}
 
+function fetchAnimeData(animeId, userId) {
   // Here we define our query as a multi-line string
   // Storing it in a separate .graphql/.gql file is also possible
   var query2 = `

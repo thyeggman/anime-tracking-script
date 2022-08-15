@@ -32,14 +32,24 @@ function updateSheet() {
     for (i = 0; i < anime.length; i++) {
       var j = 0;
       if (anime[i].genres.length == 0) {
-        sheet.getRange(genreCounts[NO_GENRE] + 2, genreColDict[NO_GENRE])
-          .setValue(anime[i].title.english)
-        genreCounts[anime[i].genres[j]] += 1
+        var range = sheet.getRange(genreCounts[NO_GENRE] + 2, genreColDict[NO_GENRE])
+        if (anime[i].title.english != null) {
+          range.setValue(anime[i].title.english)
+        }
+        else {
+          range.setValue(anime[i].title.romaji)
+        }
+        genreCounts[NO_GENRE] += 1
         continue
       }
       for (j = 0; j < anime[i].genres.length; j++) {
-        sheet.getRange(genreCounts[anime[i].genres[j]] + 2, genreColDict[anime[i].genres[j]] + 1)
-          .setValue(anime[i].title.english)
+        var range = sheet.getRange(genreCounts[anime[i].genres[j]] + 2, genreColDict[anime[i].genres[j]])
+        if (anime[i].title.english != null) {
+          range.setValue(anime[i].title.english)
+        }
+        else {
+          range.setValue(anime[i].title.romaji)
+        }
         genreCounts[anime[i].genres[j]] += 1
       }
     }

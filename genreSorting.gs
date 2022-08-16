@@ -2,8 +2,14 @@ const ANILIST_URL = 'https://graphql.anilist.co'
 const START_DATE = 20220101
 const END_DATE = 20221231
 const NO_GENRE = 'No Genre'
+const AWARDS_YEAR = 2022
+const ANIME_FORMAT_COL = 1
+const MOVIE_FORMAT_COL = 2
+const SHORT_FORMAT_COL = 3
+const SHORT_SERIES_COL = 4
+const UNKNOWN_FORMAT_COL = 5
 
-function updateSheet() {
+function updateGenreSheet() {
 
   // Spreadsheet stuff
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -32,24 +38,14 @@ function updateSheet() {
     for (i = 0; i < anime.length; i++) {
       var j = 0;
       if (anime[i].genres.length == 0) {
-        var range = sheet.getRange(genreCounts[NO_GENRE] + 2, genreColDict[NO_GENRE])
-        if (anime[i].title.english != null) {
-          range.setValue(anime[i].title.english)
-        }
-        else {
-          range.setValue(anime[i].title.romaji)
-        }
+        sheet.getRange(genreCounts[NO_GENRE] + 2, genreColDict[NO_GENRE])
+          .setValue(getTitle(anime[i]))
         genreCounts[NO_GENRE] += 1
         continue
       }
       for (j = 0; j < anime[i].genres.length; j++) {
-        var range = sheet.getRange(genreCounts[anime[i].genres[j]] + 2, genreColDict[anime[i].genres[j]])
-        if (anime[i].title.english != null) {
-          range.setValue(anime[i].title.english)
-        }
-        else {
-          range.setValue(anime[i].title.romaji)
-        }
+        sheet.getRange(genreCounts[anime[i].genres[j]] + 2, genreColDict[anime[i].genres[j]])
+          .setValue(getTitle(anime[i]))
         genreCounts[anime[i].genres[j]] += 1
       }
     }
@@ -86,6 +82,8 @@ function fetchAllAnime(year, page) {
           romaji
           english
         }
+        episodes
+        duration
         genres
       }
     }
@@ -116,9 +114,72 @@ function fetchAllAnime(year, page) {
   return jsonResult.data.Page.media
 }
 
+function updateFormatSheet() {
+
+  // Spreadsheet stuff
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+
+  sheet.getRange(1, ANIME_FORMAT_COL).setValue("TV Anime")
+  sheet.getRange(1, MOVIE_FORMAT_COL).setValue("Movie")
+  sheet.getRange(1, SHORT_FORMAT_COL).setValue("Short")
+  sheet.getRange(1, SHORT_SERIES_COL).setValue("Short Series")
+  sheet.getRange(1, UNKNOWN_FORMAT_COL).setValue("Uncategorized")
+
+  var formatCounts = {}
+  for (i = 0; i < UNKNOWN_FORMAT_COL; i++) {
+    formatCounts[i + 1] = 0 
+  }
+
+  var page = 1;
+  while (true) {
+    var anime = fetchAllAnime(AWARDS_YEAR, page++)
+    if (anime.length == 0) break
+
+    for (i = 0; i < anime.length; i++) {
+      if (anime[i].episodes != null && anime[i].duration != null) {
+        if (anime[i].episodes == 1) {
+          if (anime[i].duration <= 40) {
+            sheet.getRange(formatCounts[SHORT_FORMAT_COL] + 2, SHORT_FORMAT_COL).setValue(getTitle(anime[i]))
+            formatCounts[SHORT_FORMAT_COL] += 1
+          }
+          else {
+            sheet.getRange(formatCounts[MOVIE_FORMAT_COL] + 2, MOVIE_FORMAT_COL).setValue(getTitle(anime[i]))
+            formatCounts[MOVIE_FORMAT_COL] += 1
+          }
+        }
+        else {
+          if (anime[i].duration <= 15) {
+            sheet.getRange(formatCounts[SHORT_SERIES_COL] + 2, SHORT_SERIES_COL).setValue(getTitle(anime[i]))
+            formatCounts[SHORT_SERIES_COL] += 1
+          }
+          else {
+            sheet.getRange(formatCounts[ANIME_FORMAT_COL] + 2, ANIME_FORMAT_COL).setValue(getTitle(anime[i]))
+            formatCounts[ANIME_FORMAT_COL] += 1
+          }
+        }
+      }
+      else {
+        sheet.getRange(formatCounts[UNKNOWN_FORMAT_COL] + 2, UNKNOWN_FORMAT_COL).setValue(getTitle(anime[i]))
+        formatCounts[UNKNOWN_FORMAT_COL] += 1
+      }
+    }
+  }
+}
+
+function getTitle(anime) {
+  if (anime.title.english != null) {
+    return anime.title.english
+  }
+  else {
+    return anime.title.romaji
+  }
+}
+
 function onOpen() {
   var ui = SpreadsheetApp.getUi()
   ui.createMenu('Genre')
-    .addItem('Update sheet', 'updateSheet')
+    .addItem('Update genre sheet', 'updateGenreSheet')
+    .addItem('Update format sheet', 'updateFormatSheet')
     .addToUi()
 }
